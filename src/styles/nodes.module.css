@@ -1,0 +1,95 @@
+.nodeCard {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.active {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.concept {
+  border-top: 5px solid #8a745b;
+}
+
+.formula {
+  border-top: 5px solid #b78838;
+}
+
+.practice {
+  border-top: 5px solid #7e9e53;
+}
+
+.review {
+  border-top: 5px solid #b85f45;
+}
+
+.nodeEyebrow {
+  display: inline-block;
+  margin-bottom: 0.65rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nodeTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.nodeBody {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.nodeFootnote {
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.nodeFooter {
+  margin-top: 1rem;
+}
+
+.masteryPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.formulaBlock {
+  overflow-x: auto;
+  margin: 0;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.85rem;
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-size: 0.92rem;
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skeletonBar {
+  height: 1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.14));
+}
