@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styles from '../../styles/layout.module.css';
 
-function TopicInput({ defaultValue = '', onSubmit }) {
+function TopicInput({ defaultValue = '', disabled = false, onSubmit }) {
   const [value, setValue] = useState(defaultValue);
 
   useEffect(() => {
@@ -27,12 +27,13 @@ function TopicInput({ defaultValue = '', onSubmit }) {
       <input
         id="topic-input"
         className={styles.topicInput}
+        disabled={disabled}
         onChange={(event) => setValue(event.target.value)}
         placeholder="Example: chain rule"
         value={value}
       />
-      <button className={styles.primaryButton} type="submit">
-        Generate graph
+      <button className={styles.primaryButton} disabled={disabled} type="submit">
+        {disabled ? 'Generating…' : 'Generate graph'}
       </button>
     </form>
   );

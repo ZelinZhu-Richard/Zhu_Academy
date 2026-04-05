@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import GraphCanvas from './components/layout/GraphCanvas';
+import { GraphCanvas } from './components/layout/GraphCanvas';
+import NodeSkeleton from './components/nodes/NodeSkeleton';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 import ErrorBanner from './components/ui/ErrorBanner';
@@ -10,14 +11,16 @@ import { useGraphStore } from './store/graphStore';
 import styles from './styles/layout.module.css';
 
 function App() {
-  const theme = useGraphStore((state) => state.theme);
-  const error = useGraphStore((state) => state.error);
-  const status = useGraphStore((state) => state.status);
-  const topic = useGraphStore((state) => state.topic);
-  const nodes = useGraphStore((state) => state.nodes);
-  const reviewMode = useGraphStore((state) => state.reviewMode);
-  const clearError = useGraphStore((state) => state.clearError);
-  const { createTopicGraph, resetTopicGraph, toggleTheme, toggleReviewMode } = useGraphActions();
+  const topic = useGraphStore((s) => s.topic);
+  const status = useGraphStore((s) => s.status);
+  const error = useGraphStore((s) => s.error);
+  const isGenerating = useGraphStore((s) => s.isGenerating);
+  const theme = useGraphStore((s) => s.theme);
+  const reviewMode = useGraphStore((s) => s.reviewMode);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
+  const clearError = useGraphStore((s) => s.clearError);
+
+  const { generateGraph, resetGraph, toggleTheme, toggleReviewMode } = useGraphActions();
 
   useKeyboardShortcuts();
 
@@ -34,14 +37,42 @@ function App() {
         onToggleTheme={toggleTheme}
       />
 
-      {error ? <ErrorBanner message={error} onDismiss={clearError} /> : null}
+      {error ? (
+        <ErrorBanner
+          message={error}
+          onDismiss={clearError}
+          onRetry={topic ? () => generateGraph(topic) : undefined}
+        />
+      ) : null}
 
       <div className={styles.mainLayout}>
-        <Sidebar topic={topic} onGenerate={createTopicGraph} onReset={resetTopicGraph} />
-        <GraphCanvas />
+        <Sidebar
+          topic={topic}
+          isLoading={isGenerating}
+          onGenerate={generateGraph}
+          onReset={resetGraph}
+        />
+        <div className={styles.graphCanvas}>
+          {isGenerating ? (
+            <div className={styles.skeletonGrid}>
+              <NodeSkeleton />
+              <NodeSkeleton />
+              <NodeSkeleton />
+              <NodeSkeleton />
+              <NodeSkeleton />
+            </div>
+          ) : nodeCount > 0 ? (
+            <GraphCanvas />
+          ) : (
+            <div className={styles.emptyState}>
+              <h2>Generate your first topic graph</h2>
+              <p>Type a subject in the sidebar and hit Generate.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <StatusBar nodeCount={nodes.length} status={status} topic={topic} />
+      <StatusBar topic={topic} status={status} nodeCount={nodeCount} />
     </div>
   );
 }

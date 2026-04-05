@@ -1,45 +1,44 @@
 import dagre from 'dagre';
 
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 180;
+const NODE_WIDTH = 260;
+const NODE_HEIGHT = 160;
 
-export function layoutGraph(nodes) {
-  const graph = new dagre.graphlib.Graph();
+/**
+ * Runs dagre layout on React Flow nodes and edges.
+ * Returns new arrays with updated positions — does not mutate inputs.
+ */
+export function getLayoutedElements(nodes, edges, direction = 'TB') {
+  const g = new dagre.graphlib.Graph();
 
-  graph.setGraph({
-    marginx: 24,
-    marginy: 24,
-    nodesep: 32,
-    rankdir: 'LR',
-    ranksep: 72,
+  g.setGraph({
+    rankdir: direction,
+    nodesep: 60,
+    ranksep: 100,
+    marginx: 40,
+    marginy: 40,
   });
-  graph.setDefaultEdgeLabel(() => ({}));
+  g.setDefaultEdgeLabel(() => ({}));
 
   nodes.forEach((node) => {
-    graph.setNode(node.id, { height: NODE_HEIGHT, width: NODE_WIDTH });
+    g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
   });
 
-  nodes.forEach((node) => {
-    (node.dependsOn ?? []).forEach((parentId) => {
-      graph.setEdge(parentId, node.id);
-    });
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
   });
 
-  dagre.layout(graph);
+  dagre.layout(g);
 
-  return nodes.map((node) => {
-    const layoutNode = graph.node(node.id);
-
+  const layoutedNodes = nodes.map((node) => {
+    const pos = g.node(node.id);
     return {
       ...node,
       position: {
-        x: Math.max(0, layoutNode.x - NODE_WIDTH / 2),
-        y: Math.max(0, layoutNode.y - NODE_HEIGHT / 2),
-      },
-      size: {
-        height: NODE_HEIGHT,
-        width: NODE_WIDTH,
+        x: pos.x - NODE_WIDTH / 2,
+        y: pos.y - NODE_HEIGHT / 2,
       },
     };
   });
+
+  return { nodes: layoutedNodes, edges };
 }

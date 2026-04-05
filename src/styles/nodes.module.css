@@ -88,8 +88,38 @@
   gap: 0.75rem;
 }
 
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
 .skeletonBar {
+  width: 100%;
   height: 1rem;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.14));
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton > .skeletonBar:nth-child(2) {
+  width: 75%;
+  animation-delay: 0.2s;
+}
+
+.skeleton > .skeletonBar:nth-child(3) {
+  width: 50%;
+  animation-delay: 0.4s;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background: var(--muted);
+  border: 2px solid var(--bg-elevated);
 }

@@ -1,126 +1,90 @@
-import { clearGraphState, loadGraphState, saveGraphState } from '../services/storageService';
+import { requestConceptGraphParsed } from '../services/claudeService';
 import { useGraphStore } from '../store/graphStore';
-import { layoutGraph } from '../utils/layoutGraph';
 
-function buildSeedNodes(topic) {
-  return [
-    {
-      dependsOn: [],
-      description: `High-level framing for ${topic} and why it matters.`,
-      id: 'concept-overview',
-      mastery: 0.25,
-      title: `${topic} overview`,
-      type: 'concept',
+function transformToReactFlow(claudeResponse) {
+  const { nodes: conceptNodes = [], edges: conceptEdges = [] } = claudeResponse;
+
+  const rfNodes = conceptNodes.map((node) => ({
+    id: node.id,
+    type: 'concept',
+    position: { x: 0, y: 0 },
+    data: {
+      id: node.id,
+      label: node.label,
+      description: node.description || '',
+      depth: node.depth ?? 0,
+      parentId: node.parentId ?? null,
+      connections: node.connections || [],
+      expanded: false,
+      mastery: 0.0,
+      practiceProblems: [],
+      formula: node.formula ?? null,
+      mistakes: [],
+      lastReviewed: null,
+      nodeType: node.nodeType || 'concept',
     },
-    {
-      dependsOn: ['concept-overview'],
-      description: `Key relationship or expression to memorize for ${topic}.`,
-      formula: 'f(x + h) - f(x) / h',
-      id: 'formula-anchor',
-      mastery: 0.4,
-      title: `${topic} anchor formula`,
-      type: 'formula',
-    },
-    {
-      dependsOn: ['concept-overview'],
-      id: 'practice-core',
-      mastery: 0.15,
-      question: `Solve a representative ${topic} problem and explain each step.`,
-      title: `${topic} practice`,
-      type: 'practice',
-    },
-    {
-      dependsOn: ['formula-anchor', 'practice-core'],
-      description: `Explain ${topic} from memory, then solve one problem without notes.`,
-      id: 'review-checkpoint',
-      mastery: 0.1,
-      reviewPrompt: `Teach the core idea of ${topic} in under two minutes.`,
-      title: `${topic} review checkpoint`,
-      type: 'review',
-    },
-  ];
+  }));
+
+  const nodeIds = new Set(rfNodes.map((n) => n.id));
+  const rfEdges = conceptEdges
+    .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
+    .map((e) => ({
+      id: e.id || `e-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      ...(e.label ? { label: e.label } : {}),
+    }));
+
+  return { nodes: rfNodes, edges: rfEdges };
 }
 
 export function useGraphActions() {
-  const hydrateGraph = useGraphStore((state) => state.hydrateGraph);
-  const resetGraph = useGraphStore((state) => state.resetGraph);
-  const clearError = useGraphStore((state) => state.clearError);
-  const toggleThemeStore = useGraphStore((state) => state.toggleTheme);
-  const toggleReviewModeStore = useGraphStore((state) => state.toggleReviewMode);
+  const setGraph = useGraphStore((s) => s.setGraph);
+  const setStatus = useGraphStore((s) => s.setStatus);
+  const setError = useGraphStore((s) => s.setError);
+  const setIsGenerating = useGraphStore((s) => s.setIsGenerating);
+  const setTopic = useGraphStore((s) => s.setTopic);
+  const clearError = useGraphStore((s) => s.clearError);
+  const resetGraphStore = useGraphStore((s) => s.resetGraph);
+  const toggleThemeStore = useGraphStore((s) => s.toggleTheme);
+  const toggleReviewModeStore = useGraphStore((s) => s.toggleReviewMode);
 
-  const createTopicGraph = (topic) => {
+  const generateGraph = async (topic) => {
+    if (useGraphStore.getState().isGenerating) {
+      return;
+    }
+
     clearError();
-    useGraphStore.getState().setStatus('loading');
+    setStatus('loading');
+    setIsGenerating(true);
+    setTopic(topic);
 
     try {
-      const cachedState = loadGraphState(topic);
+      const data = await requestConceptGraphParsed(topic);
+      const { nodes, edges } = transformToReactFlow(data);
 
-      if (cachedState?.nodes?.length) {
-        hydrateGraph({
-          ...cachedState,
-          activeNodeId: cachedState.nodes[0]?.id ?? null,
-          error: '',
-          status: 'ready',
-          topic,
-        });
-        return;
+      if (nodes.length === 0) {
+        throw new Error('Claude returned no concepts. Try a more specific topic.');
       }
 
-      const nodes = layoutGraph(buildSeedNodes(topic));
-      const nextState = {
-        activeNodeId: nodes[0]?.id ?? null,
-        error: '',
-        nodes,
-        reviewMode: false,
-        status: 'ready',
-        topic,
-      };
-
-      hydrateGraph(nextState);
-      saveGraphState(topic, {
-        nodes,
-        reviewMode: false,
-        theme: useGraphStore.getState().theme,
-      });
-    } catch (error) {
-      useGraphStore.getState().setError(error.message || 'Unable to build graph');
+      setGraph(nodes, edges);
+      setStatus('ready');
+    } catch (err) {
+      console.error('[useGraphActions.generateGraph]', err);
+      setError(err.message || 'Something went wrong generating the graph');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const resetTopicGraph = () => {
-    const { topic } = useGraphStore.getState();
-
-    if (topic) {
-      clearGraphState(topic);
-    }
-
-    resetGraph();
-  };
-
-  const toggleTheme = () => {
-    toggleThemeStore();
-
-    const { nodes, reviewMode, theme, topic } = useGraphStore.getState();
-
-    if (topic) {
-      saveGraphState(topic, { nodes, reviewMode, theme });
-    }
-  };
-
-  const toggleReviewMode = () => {
-    toggleReviewModeStore();
-
-    const { nodes, reviewMode, theme, topic } = useGraphStore.getState();
-
-    if (topic) {
-      saveGraphState(topic, { nodes, reviewMode, theme });
-    }
+  const resetGraph = () => {
+    resetGraphStore();
   };
 
   return {
-    createTopicGraph,
-    resetTopicGraph,
-    toggleReviewMode,
-    toggleTheme,
+    generateGraph,
+    resetGraph,
+    toggleTheme: toggleThemeStore,
+    toggleReviewMode: toggleReviewModeStore,
   };
 }

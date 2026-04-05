@@ -1,16 +1,16 @@
 import TopicInput from '../ui/TopicInput';
 import styles from '../../styles/layout.module.css';
 
-function Sidebar({ topic, onGenerate, onReset }) {
+function Sidebar({ topic, isLoading, onGenerate, onReset }) {
   return (
     <aside className={styles.sidebar}>
       <section>
         <h2 className={styles.sectionTitle}>Build a graph</h2>
         <p className={styles.supportText}>
-          Start with a topic and seed a study graph. The scaffold currently loads demo nodes
-          for the chosen topic.
+          Enter a subject to generate a concept graph with Claude and build a study path around
+          the ideas that matter.
         </p>
-        <TopicInput defaultValue={topic} onSubmit={onGenerate} />
+        <TopicInput defaultValue={topic} disabled={isLoading} onSubmit={onGenerate} />
       </section>
 
       <section className={styles.sidebarSection}>
@@ -28,7 +28,12 @@ function Sidebar({ topic, onGenerate, onReset }) {
         </ul>
       </section>
 
-      <button className={styles.secondaryButton} onClick={onReset} type="button">
+      <button
+        className={styles.secondaryButton}
+        disabled={isLoading}
+        onClick={onReset}
+        type="button"
+      >
         Reset graph
       </button>
     </aside>
