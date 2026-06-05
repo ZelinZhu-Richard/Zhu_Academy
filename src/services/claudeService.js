@@ -3,7 +3,7 @@ import { buildExpandNodePrompt } from '../prompts/expandNode';
 import { buildGenerateConceptGraphPrompt } from '../prompts/generateConceptGraph';
 import { buildGeneratePracticePrompt } from '../prompts/generatePractice';
 
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_API_URL = '/api/claude';
 const DEFAULT_MODEL = 'claude-3-5-sonnet-latest';
 
 export class ClaudeServiceError extends Error {
@@ -14,17 +14,7 @@ export class ClaudeServiceError extends Error {
   }
 }
 
-function getApiKey() {
-  return import.meta.env.VITE_CLAUDE_API_KEY?.trim();
-}
-
 async function callClaude(prompt) {
-  const apiKey = getApiKey();
-
-  if (!apiKey) {
-    throw new ClaudeServiceError('auth', 'Missing VITE_CLAUDE_API_KEY in .env.local');
-  }
-
   let response;
 
   try {
@@ -35,9 +25,7 @@ async function callClaude(prompt) {
         model: DEFAULT_MODEL,
       }),
       headers: {
-        'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
-        'x-api-key': apiKey,
       },
       method: 'POST',
     });
@@ -45,12 +33,16 @@ async function callClaude(prompt) {
     console.error('[claudeService.callClaude]', error);
     throw new ClaudeServiceError(
       'network',
-      'Network error: could not reach Claude API. Check your connection.'
+      'Network error: could not reach the Claude backend endpoint. Check your connection.'
     );
   }
 
   if (!response.ok) {
     const errorText = await response.text();
+
+    if (response.status === 401 || response.status === 403) {
+      throw new ClaudeServiceError('auth', errorText || 'Claude backend authentication failed.');
+    }
 
     if (response.status === 429) {
       throw new ClaudeServiceError(
@@ -59,7 +51,7 @@ async function callClaude(prompt) {
       );
     }
 
-    throw new ClaudeServiceError('api', `Claude API error (${response.status}): ${errorText}`);
+    throw new ClaudeServiceError('api', `Claude backend error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();

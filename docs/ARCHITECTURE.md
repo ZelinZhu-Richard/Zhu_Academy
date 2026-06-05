@@ -6,6 +6,9 @@
 User Input (topic)
     |
     v
+Backend Claude proxy (/api/claude)
+    |
+    v
 Claude API (generateConceptGraph prompt)
     |
     v
@@ -18,7 +21,7 @@ Dagre Layout (layoutGraph utility)
 React Flow Canvas (renders nodes + edges)
     |
     v
-User clicks node --> Claude API (expandNode) --> store update --> re-layout --> re-render
+User clicks node --> /api/claude (expandNode) --> Claude API --> store update --> re-layout --> re-render
 ```
 
 ## Component tree
@@ -48,18 +51,20 @@ App
 
 1. User types topic in TopicInput, hits Enter
 2. TopicInput calls `claudeService.generateConceptGraph(topic)`
-3. Claude returns JSON: array of ConceptNode objects with connections
-4. `graphStore.setGraph(nodes, edges)` updates Zustand store
-5. `layoutGraph(nodes, edges)` runs dagre for x,y positions
-6. React Flow re-renders
+3. claudeService posts the Claude payload to `/api/claude`
+4. The backend route forwards the request to Claude with `ANTHROPIC_API_KEY`
+5. Claude returns JSON: array of ConceptNode objects with connections
+6. `graphStore.setGraph(nodes, edges)` updates Zustand store
+7. `layoutGraph(nodes, edges)` runs dagre for x,y positions
+8. React Flow re-renders
 
 ### Node expansion
 
 1. User clicks expand on ConceptNode
 2. Component calls `graphStore.expandNode(nodeId)`
 3. Store sets `node.expanded = true`, `isLoading = true`
-4. `claudeService.expandNode(node, parentContext)` calls Claude
-5. Claude returns child ConceptNodes
+4. `claudeService.expandNode(node, parentContext)` calls `/api/claude`
+5. The backend route calls Claude and returns child ConceptNodes
 6. Store merges new nodes + edges
 7. `layoutGraph()` recalculates all positions
 8. React Flow re-renders
@@ -70,7 +75,7 @@ App
 2. Node switches to PracticeNode display
 3. Problems were pre-generated at expand time
 4. User types answer, submits
-5. `claudeService.assessAnswer(question, userAnswer)` evaluates
+5. `claudeService.assessAnswer(question, userAnswer)` evaluates through `/api/claude`
 6. Store updates `node.mastery`
 7. Node color updates
 
@@ -96,12 +101,14 @@ zhu_academy/
   CLAUDE.md                       # Claude Code auto-config
   AGENTS.md                       # Codex auto-config
   README.md
-  .env.local                      # VITE_CLAUDE_API_KEY (never commit)
+  .env.local                      # ANTHROPIC_API_KEY (never commit or upload)
   .env.example                    # template
   .gitignore
   package.json
   vite.config.js
   index.html
+  api/
+    claude.js                     # server-side Claude proxy; reads ANTHROPIC_API_KEY
   docs/
     ARCHITECTURE.md               # this file
     tasks/
@@ -139,7 +146,7 @@ zhu_academy/
     store/
       graphStore.js               # Zustand, single source of truth
     services/
-      claudeService.js            # all Claude API calls
+      claudeService.js            # frontend Claude request wrapper; calls /api/claude
       storageService.js           # localStorage read/write
     prompts/
       generateConceptGraph.js     # initial graph generation
@@ -166,7 +173,7 @@ zhu_academy/
 | State management | Zustand | Lightweight, no boilerplate, works with React Flow |
 | Graph library | React Flow | Purpose-built for interactive node UIs |
 | Layout engine | Dagre | Automatic directed graph layout |
-| API architecture | Direct frontend calls | No backend for MVP |
+| API architecture | Backend proxy route | Keeps Anthropic API key out of browser code |
 | Persistence | localStorage | No accounts for MVP |
 | Styling | CSS Modules | Scoped by default |
 | Node expansion | Lazy (on click) | Don't waste API calls on unexplored nodes |
@@ -183,7 +190,7 @@ Per 30-minute session (1 topic, 3 levels deep):
 
 1. ConceptNode schema -- breaks localStorage and every component
 2. graphStore is single source of truth -- no component-local graph state
-3. claudeService.js is the only Claude API touchpoint
+3. Browser code never reads Anthropic API keys; `claudeService.js` only calls `/api/claude`
 4. Prompt templates in src/prompts/ are manually tuned
 5. localStorage key format `zhuacademy_${slug}` -- changing orphans data
 6. Task files are append-only -- tools never delete each other's output

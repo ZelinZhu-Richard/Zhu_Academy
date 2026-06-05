@@ -8,7 +8,7 @@ Make correct, minimal, maintainable changes that fit the current architecture. D
 
 Zhu Academy is a React-based interactive knowledge graph learning tool. Users type a subject, get an AI-generated concept network via React Flow, click nodes to expand deeper, and track mastery through practice problems and formula recall.
 
-Stack: React 18+ (Vite), React Flow, Dagre, Zustand, Claude API (Sonnet), localStorage.
+Stack: React 18+ (Vite), React Flow, Dagre, Zustand, Claude API (Sonnet) behind `/api/claude`, localStorage.
 
 Full architecture: `docs/ARCHITECTURE.md`
 Data model and phases: `CLAUDE.md`
@@ -81,9 +81,9 @@ Do not skip this. Do not jump to editing.
 
 2. **Do not modify prompt templates.** Files in `src/prompts/` are tuned manually. Never edit them.
 
-3. **Do not add a backend server.** Frontend-only MVP.
+3. **Do not add backend surface area beyond the Claude proxy without explicit approval.** The MVP remains frontend-only except for `/api/claude`, which protects the Anthropic key.
 
-4. **Do not touch API key handling.** Key lives in `.env.local`, accessed via `import.meta.env.VITE_CLAUDE_API_KEY`.
+4. **Do not expose API keys to browser code.** The Anthropic key must be server-side as `ANTHROPIC_API_KEY`; never access it through `import.meta.env` or a `VITE_` variable.
 
 5. **Do not invent new architectural patterns.** Follow what exists.
 
@@ -98,7 +98,7 @@ src/
   store/
     graphStore.js     # Zustand store, single source of truth
   services/
-    claudeService.js  # All Claude API calls
+    claudeService.js  # Frontend Claude request wrapper; calls /api/claude
     storageService.js # localStorage persistence
   prompts/            # Claude API prompt templates (DO NOT EDIT)
   utils/

@@ -9,9 +9,9 @@ An AI-powered explorable knowledge graph for learning. Users type a subject, get
 - React 18+ (Vite)
 - React Flow (interactive node graph)
 - Dagre (auto-layout for graph positioning)
-- Claude API (Sonnet) via direct frontend calls
+- Claude API (Sonnet) via `/api/claude` backend proxy
 - Local Storage (persistence for MVP)
-- No backend for MVP
+- Minimal backend proxy only; no app database or account backend for MVP
 
 ## Architecture
 
@@ -20,7 +20,8 @@ See `docs/ARCHITECTURE.md` for full component tree, data flow, and design decisi
 Key rules:
 - All graph state lives in a single Zustand store (`src/store/graphStore.js`)
 - Every node type is a custom React Flow node component in `src/components/nodes/`
-- Claude API calls happen in `src/services/claudeService.js` -- nowhere else
+- Frontend Claude requests happen in `src/services/claudeService.js` -- nowhere else
+- Anthropic API keys stay server-side as `ANTHROPIC_API_KEY`; never use `VITE_` for API keys
 - Graph layout (dagre) runs via `src/utils/layoutGraph.js` after every node expansion
 - Mastery state tracked per-node, persisted to localStorage via `src/services/storageService.js`
 
@@ -156,7 +157,7 @@ After building a working version of something, create task files for:
 
 ## Sensitive areas
 
-- API key handling (must stay in .env.local)
+- API key handling (must stay server-side as `ANTHROPIC_API_KEY`; never expose through `VITE_`)
 - Claude API prompt templates in `src/prompts/` (these ARE the product)
 - Graph state management (single store is load-bearing)
 - localStorage schema (changing it orphans saved data)

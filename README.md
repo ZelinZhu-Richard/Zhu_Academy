@@ -9,9 +9,11 @@ git clone <your-repo-url>
 cd zhu_academy
 npm install
 cp .env.example .env.local
-# Add your Claude API key to .env.local
+# Add ANTHROPIC_API_KEY to .env.local. Do not use VITE_ for API keys.
 npm run dev
 ```
+
+Claude requests go through `/api/claude`, which reads `ANTHROPIC_API_KEY` on the server. Do not upload `.env.local` when deploying or sharing a raw project folder; `.paxelignore` excludes common local secret files for Paxel-style uploads. If a real Claude key was ever committed, uploaded, or used in a public browser build, rotate it.
 
 ## Development workflow
 
